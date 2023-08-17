@@ -15,7 +15,7 @@ struct Args {
     #[arg(long, default_value_t = 1.12)]
     /// max y value
     y_max: f64,
-    #[arg(long, default_value_t = 1000)]
+    #[arg(long, default_value_t = 500)]
     /// Number of iterations per pixel
     iterations: usize,
     #[arg(short, long, default_value = "./output.png")]
@@ -30,16 +30,17 @@ struct Args {
 }
 fn main() {
     let args = Args::parse();
-    let data_set = calculate_set(
+    let data_set = calculate_data(
         args.x_min,
         args.x_max,
-        args.y_min,
         args.y_max,
+        args.y_min,
         args.iterations,
         args.width as usize,
         args.height as usize,
     );
-    graph(data_set, args.width, args.height, args.output_file).unwrap()
+    let colors = color_histogram(&data_set, args.iterations);
+    graph(colors, args.width, args.height, args.output_file).unwrap()
 }
 
 fn run(x0: f64, y0: f64, max_iterations: usize) -> usize {
@@ -58,7 +59,7 @@ fn run(x0: f64, y0: f64, max_iterations: usize) -> usize {
     current_i
 }
 
-fn calculate_set(
+fn calculate_data(
     x_min: f64,
     x_max: f64,
     y_min: f64,
@@ -84,8 +85,41 @@ fn calculate_set(
     result
 }
 
+fn rgb_color(value: f64) -> [u8; 3] {
+    if value > 0.9999 {
+        return [0, 0, 0];
+    } else if value > 0.72 {
+        return [255, 255, 255];
+    }
+    [(120. * value) as u8, (120. * (1. - value)) as u8, 120]
+}
+fn color_histogram(data_set: &Vec<Vec<usize>>, max_iterations: usize) -> Vec<Vec<[u8; 3]>> {
+    let mut iteration_counts = vec![0.0f64; max_iterations];
+    let mut result = vec![vec![[0u8; 3]; data_set[0].len()]; data_set.len()];
+
+    for row in data_set {
+        for pixel_iteration in row {
+            iteration_counts[pixel_iteration - 1] += 1.0;
+        }
+    }
+
+    let total: f64 = iteration_counts.iter().sum();
+
+    for (x, row) in data_set.iter().enumerate() {
+        for (y, iteration) in row.iter().enumerate() {
+            let mut value = 0.0;
+            for i in 0..*iteration {
+                value += iteration_counts[i] / total;
+            }
+            result[x][y] = rgb_color(value);
+        }
+    }
+
+    result
+}
+
 fn graph(
-    data_set: Vec<Vec<usize>>,
+    colors: Vec<Vec<[u8; 3]>>,
     width: u32,
     height: u32,
     filename: String,
@@ -93,11 +127,7 @@ fn graph(
     let mut imgbuf = image::ImageBuffer::new(width, height);
 
     for (x, y, pixel) in imgbuf.enumerate_pixels_mut() {
-        if data_set[x as usize][y as usize] == 1000 {
-            *pixel = image::Rgb([0, 0, 0]);
-        } else {
-            *pixel = image::Rgb([255 as u8, 255, 255]);
-        }
+        *pixel = image::Rgb(colors[x as usize][y as usize]);
     }
 
     imgbuf.save(filename)?;
