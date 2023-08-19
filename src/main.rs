@@ -1,5 +1,6 @@
 use ::clap::Parser;
 use image::ImageError;
+use rayon::prelude::*;
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
@@ -21,11 +22,11 @@ struct Args {
     #[arg(short, long, default_value = "./output.png")]
     /// Name of png file
     output_file: String,
-    #[arg(long, default_value_t = 800)]
+    #[arg(long, default_value_t = 1000)]
     /// Width of png file in pixels.
     width: u32,
     /// Height of png file in pixels.
-    #[arg(long, default_value_t = 800)]
+    #[arg(long, default_value_t = 900)]
     height: u32,
 }
 fn main() {
@@ -70,19 +71,21 @@ fn calculate_data(
 ) -> Vec<Vec<usize>> {
     let x_step = (x_max - x_min) / width as f64;
     let y_step = (y_max - y_min) / height as f64;
-    let mut result = vec![vec![0; height]; width];
-
-    for x in 0..width {
-        for y in 0..height {
-            result[x][y] = run(
-                x_min + x as f64 * x_step,
-                y_min + y as f64 * y_step,
-                max_iterations,
-            )
-        }
-    }
-
-    result
+    (0..width)
+        .into_par_iter()
+        .map(|x| {
+            (0..height)
+                .into_iter()
+                .map(|y| {
+                    run(
+                        x_min + x as f64 * x_step,
+                        y_min + y as f64 * y_step,
+                        max_iterations,
+                    )
+                })
+                .collect::<Vec<usize>>()
+        })
+        .collect()
 }
 
 fn rgb_color(value: f64) -> [u8; 3] {
