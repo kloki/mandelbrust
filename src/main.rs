@@ -1,5 +1,14 @@
 use ::clap::Parser;
+use ::std::io;
+use ::std::io::Write;
+use ::std::time::Instant;
+use coloring::{get_colors, Coloring};
 use image::ImageError;
+use mandlebrot::calculate_data;
+mod coloring;
+mod mandlebrot;
+
+use console::{style, Emoji, Style};
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
@@ -21,15 +30,34 @@ struct Args {
     #[arg(short, long, default_value = "./output.png")]
     /// Name of png file
     output_file: String,
-    #[arg(long, default_value_t = 800)]
+    #[arg(long, default_value_t = 1000)]
     /// Width of png file in pixels.
     width: u32,
     /// Height of png file in pixels.
-    #[arg(long, default_value_t = 800)]
+    #[arg(long, default_value_t = 900)]
     height: u32,
+    /// Coloring scheme used.
+    #[arg(long, default_value_t = Coloring::Blackwhite)]
+    #[arg(value_enum)]
+    coloring: Coloring,
 }
+
+static CALCULATING: Emoji<'_, '_> = Emoji("🧮 ", "");
+static COLORING: Emoji<'_, '_> = Emoji("🌈 ", "");
+static PNG: Emoji<'_, '_> = Emoji("🖼️  ", "");
+static SPARKLE: Emoji<'_, '_> = Emoji("✨ ", ":-)");
+
 fn main() {
+    let green = Style::new().green();
     let args = Args::parse();
+
+    let instant = Instant::now();
+    print!(
+        "{} {}Calculating data...       ",
+        style("[1/3]").bold().dim(),
+        CALCULATING
+    );
+    io::stdout().flush().unwrap();
     let data_set = calculate_data(
         args.x_min,
         args.x_max,
@@ -39,83 +67,29 @@ fn main() {
         args.width as usize,
         args.height as usize,
     );
-    let colors = color_histogram(&data_set, args.iterations);
-    graph(colors, args.width, args.height, args.output_file).unwrap()
-}
+    println!("{:?}", green.apply_to(instant.elapsed()));
 
-fn run(x0: f64, y0: f64, max_iterations: usize) -> usize {
-    let mut current_i = 0;
-    let mut x2 = 0.;
-    let mut y2 = 0.;
-    let mut w = 0.;
-    while (x2 + y2) <= 4. && current_i < max_iterations {
-        let x = x2 - y2 + x0;
-        let y = w - x2 - y2 + y0;
-        x2 = x * x;
-        y2 = y * y;
-        w = (x + y) * (x + y);
-        current_i += 1;
-    }
-    current_i
-}
+    let instant = Instant::now();
+    print!(
+        "{} {}Calculating Colors...     ",
+        style("[2/3]").bold().dim(),
+        COLORING
+    );
+    io::stdout().flush().unwrap();
+    let colors = get_colors(args.coloring, &data_set, args.iterations);
+    println!("{:?}", green.apply_to(instant.elapsed()));
 
-fn calculate_data(
-    x_min: f64,
-    x_max: f64,
-    y_min: f64,
-    y_max: f64,
-    max_iterations: usize,
-    width: usize,
-    height: usize,
-) -> Vec<Vec<usize>> {
-    let x_step = (x_max - x_min) / width as f64;
-    let y_step = (y_max - y_min) / height as f64;
-    let mut result = vec![vec![0; height]; width];
+    let instant = Instant::now();
+    print!(
+        "{} {}Creating PNG...           ",
+        style("[3/3]").bold().dim(),
+        PNG
+    );
+    io::stdout().flush().unwrap();
+    graph(colors, args.width, args.height, args.output_file).unwrap();
+    println!("{:?}", green.apply_to(instant.elapsed()));
 
-    for x in 0..width {
-        for y in 0..height {
-            result[x][y] = run(
-                x_min + x as f64 * x_step,
-                y_min + y as f64 * y_step,
-                max_iterations,
-            )
-        }
-    }
-
-    result
-}
-
-fn rgb_color(value: f64) -> [u8; 3] {
-    if value > 0.9999 {
-        return [0, 0, 0];
-    } else if value > 0.72 {
-        return [255, 255, 255];
-    }
-    [(120. * value) as u8, (120. * (1. - value)) as u8, 120]
-}
-fn color_histogram(data_set: &Vec<Vec<usize>>, max_iterations: usize) -> Vec<Vec<[u8; 3]>> {
-    let mut iteration_counts = vec![0.0f64; max_iterations];
-    let mut result = vec![vec![[0u8; 3]; data_set[0].len()]; data_set.len()];
-
-    for row in data_set {
-        for pixel_iteration in row {
-            iteration_counts[pixel_iteration - 1] += 1.0;
-        }
-    }
-
-    let total: f64 = iteration_counts.iter().sum();
-
-    for (x, row) in data_set.iter().enumerate() {
-        for (y, iteration) in row.iter().enumerate() {
-            let mut value = 0.0;
-            for i in 0..*iteration {
-                value += iteration_counts[i] / total;
-            }
-            result[x][y] = rgb_color(value);
-        }
-    }
-
-    result
+    println!("{} Done", SPARKLE);
 }
 
 fn graph(
