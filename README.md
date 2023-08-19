@@ -9,5 +9,5 @@ https://en.wikipedia.org/wiki/Mandelbrot_set
 cargo build --release
 ./target/release/mandelbrust --help
 ./target/release/mandelbrust
-./target/release/mandelbrust -x=-0.745 -y=0.1 --zoom=200 --iterations 10000 --ouput_file=zoomed.png
+./target/release/mandelbrust -x=-0.745 -y=0.1 --zoom=200 --iterations 10000 --output-file=zoomed.png
 ```
