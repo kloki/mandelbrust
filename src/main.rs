@@ -1,6 +1,6 @@
 use ::clap::Parser;
+use ::std::time::Instant;
 use image::ImageError;
-use rayon::prelude::*;
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
@@ -31,6 +31,9 @@ struct Args {
 }
 fn main() {
     let args = Args::parse();
+
+    let instant = Instant::now();
+    print!("🧮 calculating data.");
     let data_set = calculate_data(
         args.x_min,
         args.x_max,
@@ -40,8 +43,18 @@ fn main() {
         args.width as usize,
         args.height as usize,
     );
+    let _ = data_set[0].len();
+    println!(" {:?}", instant.elapsed());
+
+    let instant = Instant::now();
+    print!("🌈 calculating colors");
     let colors = color_histogram(&data_set, args.iterations);
-    graph(colors, args.width, args.height, args.output_file).unwrap()
+    println!(" {:?}", instant.elapsed());
+
+    let instant = Instant::now();
+    print!("🖌️ creating png");
+    graph(colors, args.width, args.height, args.output_file).unwrap();
+    println!(" {:?}", instant.elapsed());
 }
 
 fn run(x0: f64, y0: f64, max_iterations: usize) -> usize {
@@ -71,8 +84,8 @@ fn calculate_data(
 ) -> Vec<Vec<usize>> {
     let x_step = (x_max - x_min) / width as f64;
     let y_step = (y_max - y_min) / height as f64;
-    (0..width)
-        .into_par_iter()
+    let result = (0..width)
+        .into_iter()
         .map(|x| {
             (0..height)
                 .into_iter()
@@ -85,7 +98,8 @@ fn calculate_data(
                 })
                 .collect::<Vec<usize>>()
         })
-        .collect()
+        .collect();
+    return result;
 }
 
 fn rgb_color(value: f64) -> [u8; 3] {
