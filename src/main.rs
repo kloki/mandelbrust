@@ -12,7 +12,7 @@ use console::{style, Emoji, Style};
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
-    #[arg(long, default_value_t = -2.0)]
+    #[arg(long, default_value_t = -1.95)]
     /// min x value
     x_min: f64,
     #[arg(long, default_value_t = 0.47)]
@@ -34,7 +34,7 @@ struct Args {
     /// Width of png file in pixels.
     width: u32,
     /// Height of png file in pixels.
-    #[arg(long, default_value_t = 900)]
+    #[arg(long, default_value_t = 1000)]
     height: u32,
     /// Coloring scheme used.
     #[arg(long, default_value_t = Coloring::Blackwhite)]
