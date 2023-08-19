@@ -19,7 +19,7 @@ struct Args {
     #[arg(short, long, default_value_t = 0.0)]
     y: f64,
     /// zoom
-    #[arg(long, default_value_t = 1.)]
+    #[arg(long, default_value_t = 0.8)]
     zoom: f64,
     /// Number of iterations per pixel
     #[arg(long, default_value_t = 500)]
