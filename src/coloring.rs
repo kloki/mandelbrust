@@ -9,9 +9,6 @@ pub enum Coloring {
     Colors,
     Wiki,
 }
-fn pallete(scaling: f64) -> [u8; 3] {
-    [(255. * (1. - scaling)) as u8, 200, (200. * scaling) as u8]
-}
 
 fn colors(data_set: &Vec<Vec<DataPoint>>, max_iter: usize) -> Vec<Vec<[u8; 3]>> {
     data_set
@@ -23,7 +20,11 @@ fn colors(data_set: &Vec<Vec<DataPoint>>, max_iter: usize) -> Vec<Vec<[u8; 3]>> 
                         return BLACK;
                     }
                     let scaling = 1.0 - dp.value.abs().log2().log10();
-                    pallete(scaling)
+                    [
+                        (255. * (1. - scaling)) as u8,
+                        (200. * scaling) as u8,
+                        (200. * scaling) as u8,
+                    ]
                 })
                 .collect()
         })
