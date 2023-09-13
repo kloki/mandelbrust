@@ -10,6 +10,25 @@ pub enum Coloring {
     Wiki,
 }
 
+const PALLETE: [[u8; 3]; 16] = [
+    [66, 30, 15],
+    [25, 7, 26],
+    [9, 1, 47],
+    [4, 4, 73],
+    [0, 7, 100],
+    [12, 44, 138],
+    [24, 82, 177],
+    [57, 125, 209],
+    [134, 181, 229],
+    [211, 236, 248],
+    [241, 233, 191],
+    [248, 201, 95],
+    [255, 170, 0],
+    [204, 128, 0],
+    [153, 87, 0],
+    [106, 52, 3],
+];
+
 fn colors(data_set: &Vec<Vec<DataPoint>>, max_iter: usize) -> Vec<Vec<[u8; 3]>> {
     data_set
         .iter()
@@ -47,6 +66,13 @@ fn black_white(data_set: &Vec<Vec<DataPoint>>, max_iter: usize) -> Vec<Vec<[u8; 
         .collect()
 }
 
+fn linear_interpolate(color_a: [u8; 3], color_b: [u8; 3], scaling: f64) -> [u8; 3] {
+    let r = ((color_a[0] as f64 * 1. - scaling) + (color_b[0] as f64 * scaling)) as u8;
+    let g = ((color_a[1] as f64 * 1. - scaling) + (color_b[1] as f64 * scaling)) as u8;
+    let b = ((color_a[2] as f64 * 1. - scaling) + (color_b[2] as f64 * scaling)) as u8;
+    [r, g, b]
+}
+
 fn wiki_histogram(data_set: &Vec<Vec<DataPoint>>, max_iter: usize) -> Vec<Vec<[u8; 3]>> {
     data_set
         .iter()
@@ -56,24 +82,13 @@ fn wiki_histogram(data_set: &Vec<Vec<DataPoint>>, max_iter: usize) -> Vec<Vec<[u
                     if dp.iteration == max_iter {
                         return BLACK;
                     }
-                    match dp.iteration % 16 {
-                        0 => [66, 30, 15],
-                        1 => [25, 7, 26],
-                        2 => [9, 1, 47],
-                        3 => [4, 4, 73],
-                        4 => [0, 7, 100],
-                        5 => [12, 44, 138],
-                        6 => [24, 82, 177],
-                        7 => [57, 125, 209],
-                        8 => [134, 181, 229],
-                        9 => [211, 236, 248],
-                        10 => [241, 233, 191],
-                        11 => [248, 201, 95],
-                        12 => [255, 170, 0],
-                        13 => [204, 128, 0],
-                        14 => [153, 87, 0],
-                        _ => [106, 52, 3],
-                    }
+                    let scaling = 1.0 - dp.value.abs().log2().log10();
+
+                    linear_interpolate(
+                        PALLETE[(adj_iteration as usize) % 16],
+                        PALLETE[(adj_iteration as usize + 1) % 16],
+                        adj_iteration % 1.,
+                    )
                 })
                 .collect()
         })

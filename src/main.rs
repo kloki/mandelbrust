@@ -1,14 +1,23 @@
 use ::clap::Parser;
-use ::std::io;
-use ::std::io::Write;
-use ::std::time::Instant;
-use coloring::{get_colors, Coloring};
+use ::std::{
+    io,
+    io::Write,
+    time::Instant,
+};
+use coloring::{
+    get_colors,
+    Coloring,
+};
 use image::ImageError;
 use mandlebrot::calculate_data;
 mod coloring;
 mod mandlebrot;
 
-use console::{style, Emoji, Style};
+use console::{
+    style,
+    Emoji,
+    Style,
+};
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
